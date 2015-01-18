@@ -3,6 +3,8 @@
 * https://www.fullcontact.com/developer/docs/
 
 ```python
+from fullcontact import FullContactApi
+
 api = FullContactApi(apikey="my api key")
 
 email = "foo@bar.com"
