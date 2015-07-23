@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""cli.py
+
+Usage:
+    cli.py EMAIL [-S SECRETS_FILE]
+
+Arguments:
+    EMAIL                             Email address
+
+
+Options:
+    -S --secrets-file SECRETS_FILE    Json file with fullcontact secrets in it
+
+"""
+
+import os
+import sys
+import json
+from docopt import docopt
+from fullcontact.fullcontactapi import FullContactApi
+
+FULL_CONTACT_AUTH_FILE = os.environ['HOME'] + '/' + ".full_contact_secrets"
+
+def _handle_args(args):
+    if args.get('--secrets-file'):
+        creds = json.load(open(args['--secrets-file'], 'r'))
+        json.dump(creds, open(FULL_CONTACT_AUTH_FILE, 'w'))
+    elif os.path.exists(FULL_CONTACT_AUTH_FILE):
+        creds = json.load(open(FULL_CONTACT_AUTH_FILE, 'r'))
+    else:
+        raise Exception("No full contact secrets. You must pass --secrets-file argument if this is your first time using the CLI.")
+    email = args.get("EMAIL")
+    return email, creds
+
+def main(args):
+    email, creds = _handle_args(args)
+    api = FullContactApi(**creds)
+    res = api.person(email=email)
+    return res
+
+if __name__ == "__main__":
+    args = docopt(__doc__)
+    try:
+        res = main(args)
+        print >> sys.stdout, json.dumps(res, indent=2)
+        sys.exit(0)
+    except Exception, err:
+        print >> sys.stderr, err.message
+        sys.exit(1)

@@ -6,6 +6,8 @@ read the FullContact API docs here:
 """
 import json
 import requests
+from requests import Request
+from requests import Session
 
 class ValidationError(Exception):
     def __init__(self, message, errors):
@@ -19,7 +21,7 @@ class AuthenticationError(Exception):
 
 class FullContactApi(object):
     BASE_URI = "https://api.fullcontact.com/{version}/{endpoint}.json"
-    ENDPOINTS = ["person", "name/deducer"]
+    ENDPOINTS = ["person", "name/deducer", "batch"]
     VERSIONS = ["v2"]
 
     def __init__(self, username=None, apikey=None):
@@ -73,6 +75,35 @@ class FullContactApi(object):
             raise AuthenticationError(message=msg, errors={})
         query.update({"apiKey": self._apikey})
         return query
+    
+    def _prepare_request(self, url, params={}, method="GET", data={}, authenticate=False, headers=None):
+        """prepare request without sending it"""
+        if authenticate == True or method == "POST":
+            params = self._authenticate_query(params)
+        if method == "GET":
+            req = Request(method, url, params=params)
+        elif method == "POST":
+            headers = {"Content-Type": "application/json"}
+            req = Request(method, url, params=params, 
+                          data=data, headers=headers)
+        return req.prepare()
+
+    def _prep_person_request(self, email):
+        url = self._uri_for("person")
+        return self._prepare_request(url, params={"email": email})
+
+    def _send_prepared_request(self, prepped):
+        try:
+            r = Session().send(prepped)
+            self.last_headers = r.headers
+            self.last_status_code = r.status_code
+            self.last_url = r.url
+            self.last_response = r
+            return r.json()
+        except Exception, err:
+            msg = 'something went wrong in _send_prepared_request'
+            print >> sys.stderr, msg
+            return {}
 
     def get(self, entity_type, query={}):
         url = self._uri_for(entity_type)
@@ -110,3 +141,25 @@ class FullContactApi(object):
         if casing and casing in ["uppercase", "lowercase", "titlecase"]:
             query["casing"] = casing
         return self.get("name/deducer", query=query)
+
+    def batch_process(self, emails=[]):
+        """
+        To use this endpoint, you must POST a list of API requests 
+        which you would like batched together, sending a 
+        request Content-Type of "application/json".
+        example payload:
+            {"requests" : [
+                "https://api.fullcontact.com/v2/person.json?email=a@yhathq.com",
+                "https://api.fullcontact.com/v2/person.json?email=g@yhathq.com",
+                "https://api.fullcontact.com/v2/person.json?email=bart@fullcontact.com"
+                ]
+            }
+        """
+        url = self._uri_for("batch")
+        payload = {
+            "requests": 
+                [self._prep_person_request(addr).url for addr in emails]
+        }
+        prepped = self._prepare_request(url, data=json.dumps(payload), method='POST')
+        return self._send_prepared_request(prepped)
+
