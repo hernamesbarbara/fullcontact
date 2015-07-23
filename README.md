@@ -42,7 +42,7 @@ Your credentials will be automatically saved to a dotfile in your home directory
 ~/.full_contact_secrets
 ```
 
-You can delete the `--secrets-file` (`full_contact.json` if you followed the above exactly.
+You can delete the `--secrets-file` (`full_contact.json` if you followed the above exactly).
 
 Now you can use `fullcontact` CLI without authentication.
 
