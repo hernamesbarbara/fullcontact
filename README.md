@@ -23,14 +23,14 @@ pip install .
 
 ### Command Line
 
-Configure FullContact on your machine by passing your username and apikey to the CLI one time. 
-
-Save your username and apikey in a json file like this:
+Configure FullContact on your machine by passing your username and apikey to the CLI one time. Save your username and apikey in a json file like this:
 
 ```
 # ~/Desktop/full_contact.json
 {"username": "foo@bar.com", "apikey": "my api key"}
-``
+```
+
+Now run a query and pass in your api key json file. You'll only do this once.
 
 ```
 fullcontact travis@fullcontact.com --secrets-file ~/Desktop/full_contact.json
